@@ -5,6 +5,7 @@ import (
 	"github.com/lightninglabs/aperture/lsat"
 	"github.com/lightninglabs/lndclient"
 	"github.com/lightninglabs/loop"
+	sweepbatcher "github.com/lightninglabs/loop/batcher"
 	"github.com/lightninglabs/loop/fsm"
 	"github.com/lightninglabs/loop/liquidity"
 	"github.com/lightninglabs/loop/loopdb"
@@ -31,6 +32,7 @@ func SetupLoggers(root *build.RotatingLogWriter, intercept signal.Interceptor) {
 
 	lnd.SetSubLogger(root, Subsystem, log)
 	lnd.AddSubLogger(root, "LOOP", intercept, loop.UseLogger)
+	lnd.AddSubLogger(root, "SW-BCHR", intercept, sweepbatcher.UseLogger)
 	lnd.AddSubLogger(root, "LNDC", intercept, lndclient.UseLogger)
 	lnd.AddSubLogger(root, "STORE", intercept, loopdb.UseLogger)
 	lnd.AddSubLogger(root, lsat.Subsystem, intercept, lsat.UseLogger)
