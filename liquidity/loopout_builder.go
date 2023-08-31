@@ -138,6 +138,7 @@ func (b *loopOutBuilder) buildSwap(ctx context.Context, pubkey route.Vertex,
 	// already validated them.
 	request := loop.OutRequest{
 		Amount:              amount,
+		IsWalletAddr:        true,
 		OutgoingChanSet:     chanSet,
 		MaxPrepayRoutingFee: prepayMaxFee,
 		MaxSwapRoutingFee:   routeMaxFee,
@@ -160,6 +161,7 @@ func (b *loopOutBuilder) buildSwap(ctx context.Context, pubkey route.Vertex,
 		if len(params.Account) > 0 {
 			account = params.Account
 			addrType = params.AccountAddrType
+			request.IsWalletAddr = false
 		}
 		if params.DestAddr != nil {
 			request.DestAddr = params.DestAddr

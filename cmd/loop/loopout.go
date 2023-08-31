@@ -147,9 +147,11 @@ func loopOut(ctx *cli.Context) error {
 
 	var destAddr string
 	var account string
+	isWalletAddr := true
 	switch {
 	case ctx.IsSet("addr"):
 		destAddr = ctx.String("addr")
+		isWalletAddr = false
 
 	case ctx.IsSet("account"):
 		account = ctx.String("account")
@@ -235,6 +237,7 @@ func loopOut(ctx *cli.Context) error {
 	resp, err := client.LoopOut(context.Background(), &looprpc.LoopOutRequest{
 		Amt:                     int64(amt),
 		Dest:                    destAddr,
+		IsWalletAddr:            isWalletAddr,
 		Account:                 account,
 		AccountAddrType:         accountAddrType,
 		MaxMinerFee:             int64(limits.maxMinerFee),

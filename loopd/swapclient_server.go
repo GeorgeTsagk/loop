@@ -96,6 +96,7 @@ func (s *swapClientServer) LoopOut(ctx context.Context,
 	log.Infof("Loop out request received")
 
 	var sweepAddr btcutil.Address
+	var isWalletAddr bool
 	var err error
 	//nolint:lll
 	switch {
@@ -146,6 +147,8 @@ func (s *swapClientServer) LoopOut(ctx context.Context,
 		if err != nil {
 			return nil, fmt.Errorf("NextAddr error: %v", err)
 		}
+
+		isWalletAddr = true
 	}
 
 	sweepConfTarget, err := validateLoopOutRequest(
@@ -162,6 +165,7 @@ func (s *swapClientServer) LoopOut(ctx context.Context,
 	req := &loop.OutRequest{
 		Amount:                  btcutil.Amount(in.Amt),
 		DestAddr:                sweepAddr,
+		IsWalletAddr:            isWalletAddr,
 		MaxMinerFee:             btcutil.Amount(in.MaxMinerFee),
 		MaxPrepayAmount:         btcutil.Amount(in.MaxPrepayAmt),
 		MaxPrepayRoutingFee:     btcutil.Amount(in.MaxPrepayRoutingFee),

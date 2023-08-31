@@ -175,6 +175,7 @@ func newLoopOutSwap(globalCtx context.Context, cfg *swapConfig,
 	contract := loopdb.LoopOutContract{
 		SwapInvoice:             swapResp.swapInvoice,
 		DestAddr:                request.DestAddr,
+		IsWalletAddr:            request.IsWalletAddr,
 		MaxSwapRoutingFee:       request.MaxSwapRoutingFee,
 		SweepConfTarget:         request.SweepConfTarget,
 		HtlcConfirmations:       confs,
@@ -1635,9 +1636,6 @@ func (s *loopOutSwap) sweep(ctx context.Context, htlcOutpoint wire.OutPoint,
 
 		return nil
 	}
-
-	s.executeConfig.batcher.SweepReqs <- sweep
-	return nil
 
 	confTarget, canSweep := s.sweepConfTarget()
 	if !canSweep {
