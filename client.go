@@ -14,6 +14,7 @@ import (
 	"github.com/btcsuite/btcd/btcutil"
 	"github.com/lightninglabs/aperture/lsat"
 	"github.com/lightninglabs/lndclient"
+	sweepbatcher "github.com/lightninglabs/loop/batcher"
 	"github.com/lightninglabs/loop/loopdb"
 	"github.com/lightninglabs/loop/swap"
 	"github.com/lightninglabs/loop/sweep"
@@ -149,10 +150,17 @@ func NewClient(dbDir string, loopDB loopdb.SwapStore,
 		Lnd: cfg.Lnd,
 	}
 
+	batcher := sweepbatcher.NewBatcher(
+		cfg.Lnd.WalletKit, cfg.Lnd.ChainNotifier, cfg.Lnd.Signer,
+		swapServerClient.MultiMuSig2SignSweep, cfg.Lnd.ChainParams,
+		loopDB,
+	)
+
 	executor := newExecutor(&executorConfig{
 		lnd:                 cfg.Lnd,
 		store:               loopDB,
 		sweeper:             sweeper,
+		batcher:             batcher,
 		createExpiryTimer:   config.CreateExpiryTimer,
 		loopOutMaxParts:     cfg.LoopOutMaxParts,
 		totalPaymentTimeout: cfg.TotalPaymentTimeout,

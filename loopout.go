@@ -14,10 +14,12 @@ import (
 	"github.com/btcsuite/btcd/btcec/v2"
 	"github.com/btcsuite/btcd/btcec/v2/schnorr/musig2"
 	"github.com/btcsuite/btcd/btcutil"
+	"github.com/btcsuite/btcd/chaincfg"
 	"github.com/btcsuite/btcd/chaincfg/chainhash"
 	"github.com/btcsuite/btcd/txscript"
 	"github.com/btcsuite/btcd/wire"
 	"github.com/lightninglabs/lndclient"
+	sweepbatcher "github.com/lightninglabs/loop/batcher"
 	"github.com/lightninglabs/loop/labels"
 	"github.com/lightninglabs/loop/loopdb"
 	"github.com/lightninglabs/loop/swap"
@@ -90,6 +92,7 @@ type loopOutSwap struct {
 // executeConfig contains extra configuration to execute the swap.
 type executeConfig struct {
 	sweeper            *sweep.Sweeper
+	batcherReqChan     chan sweepbatcher.SweepRequest
 	statusChan         chan<- SwapInfo
 	blockEpochChan     <-chan interface{}
 	timerFactory       func(time.Duration) <-chan time.Time
@@ -219,7 +222,9 @@ func newLoopOutSwap(globalCtx context.Context, cfg *swapConfig,
 
 	// Obtain the payment addr since we'll need it later for routing plugin
 	// recommendation and possibly for cancel.
-	paymentAddr, err := obtainSwapPaymentAddr(contract.SwapInvoice, cfg)
+	paymentAddr, err := ObtainSwapPaymentAddr(
+		contract.SwapInvoice, cfg.lnd.ChainParams,
+	)
 	if err != nil {
 		return nil, err
 	}
@@ -274,8 +279,8 @@ func resumeLoopOutSwap(cfg *swapConfig, pend *loopdb.LoopOut,
 
 	// Obtain the payment addr since we'll need it later for routing plugin
 	// recommendation and possibly for cancel.
-	paymentAddr, err := obtainSwapPaymentAddr(
-		pend.Contract.SwapInvoice, cfg,
+	paymentAddr, err := ObtainSwapPaymentAddr(
+		pend.Contract.SwapInvoice, cfg.lnd.ChainParams,
 	)
 	if err != nil {
 		return nil, err
@@ -301,12 +306,12 @@ func resumeLoopOutSwap(cfg *swapConfig, pend *loopdb.LoopOut,
 	return swap, nil
 }
 
-// obtainSwapPaymentAddr will retrieve the payment addr from the passed invoice.
-func obtainSwapPaymentAddr(swapInvoice string, cfg *swapConfig) (
+// ObtainSwapPaymentAddr will retrieve the payment addr from the passed invoice.
+func ObtainSwapPaymentAddr(swapInvoice string, chainParams *chaincfg.Params) (
 	*[32]byte, error) {
 
 	swapPayReq, err := zpay32.Decode(
-		swapInvoice, cfg.lnd.ChainParams,
+		swapInvoice, chainParams,
 	)
 	if err != nil {
 		return nil, err
@@ -1033,6 +1038,7 @@ func (s *loopOutSwap) waitForHtlcSpendConfirmed(globalCtx context.Context,
 	// Register the htlc spend notification.
 	ctx, cancel := context.WithCancel(globalCtx)
 	defer cancel()
+
 	spendChan, spendErr, err := s.lnd.ChainNotifier.RegisterSpendNtfn(
 		ctx, &htlcOutpoint, s.htlc.PkScript, s.InitiationHeight,
 	)
@@ -1533,6 +1539,21 @@ func (s *loopOutSwap) clampSweepFee(fee btcutil.Amount) (btcutil.Amount, bool) {
 func (s *loopOutSwap) sweepMuSig2(ctx context.Context,
 	htlcOutpoint wire.OutPoint, htlcValue btcutil.Amount) bool {
 
+	// If we're using a wallet address as a destination address then this
+	// sweep can be batched with other sweeps.
+	if s.IsWalletAddr {
+		s.batcherReqChan <- sweepbatcher.SweepRequest{
+			SwapHash: s.hash,
+			Outpoint: htlcOutpoint,
+			Value:    htlcValue,
+		}
+
+		// We return success here, as this will signal to the caller to
+		// not try sweeping again. The retrying is handled by the
+		// batcher.
+		return true
+	}
+
 	addInputToEstimator := func(e *input.TxWeightEstimator) error {
 		e.AddTaprootKeySpendInput(txscript.SigHashDefault)
 		return nil
@@ -1602,6 +1623,21 @@ func (s *loopOutSwap) setStatePreimageRevealed(ctx context.Context) error {
 // function will return.
 func (s *loopOutSwap) sweep(ctx context.Context, htlcOutpoint wire.OutPoint,
 	htlcValue btcutil.Amount) error {
+
+	// If we're using a wallet address as a destination address then this
+	// sweep can be batched with other sweeps.
+	if s.IsWalletAddr {
+		s.batcherReqChan <- sweepbatcher.SweepRequest{
+			SwapHash: s.hash,
+			Outpoint: htlcOutpoint,
+			Value:    htlcValue,
+		}
+
+		return nil
+	}
+
+	s.executeConfig.batcher.SweepReqs <- sweep
+	return nil
 
 	confTarget, canSweep := s.sweepConfTarget()
 	if !canSweep {
