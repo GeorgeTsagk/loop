@@ -24,6 +24,10 @@ type LoopOutContract struct {
 	// DestAddr is the destination address of the loop out swap.
 	DestAddr btcutil.Address
 
+	// IsWalletAddr indicates whether the destination address is a wallet
+	// address.
+	IsWalletAddr bool
+
 	// SwapInvoice is the invoice that is to be paid by the client to
 	// initiate the loop out swap.
 	SwapInvoice string

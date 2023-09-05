@@ -5,6 +5,7 @@
 package sqlc
 
 import (
+	"database/sql"
 	"time"
 )
 
@@ -41,6 +42,7 @@ type LoopoutSwap struct {
 	PrepayInvoice       string
 	MaxPrepayRoutingFee int64
 	PublicationDeadline time.Time
+	IsWalletAddr        bool
 }
 
 type Swap struct {
@@ -66,4 +68,23 @@ type SwapUpdate struct {
 	ServerCost      int64
 	OnchainCost     int64
 	OffchainCost    int64
+}
+
+type Sweep struct {
+	ID            int32
+	SwapHash      []byte
+	BatchID       []byte
+	OutpointTxid  []byte
+	OutpointIndex int32
+	Amt           int32
+}
+
+type SweepBatch struct {
+	ID                 []byte
+	BatchState         string
+	Batchtxid          sql.NullString
+	Batchpkscript      []byte
+	Lastrbfheight      sql.NullInt32
+	Lastrbfsatperkw    sql.NullInt32
+	Maxtimeoutdistance int32
 }

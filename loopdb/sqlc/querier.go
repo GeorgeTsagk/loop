@@ -9,18 +9,23 @@ import (
 )
 
 type Querier interface {
+	ConfirmBatch(ctx context.Context, id []byte) error
 	FetchLiquidityParams(ctx context.Context) ([]byte, error)
+	GetBatchSweeps(ctx context.Context, batchID []byte) ([]GetBatchSweepsRow, error)
 	GetLoopInSwap(ctx context.Context, swapHash []byte) (GetLoopInSwapRow, error)
 	GetLoopInSwaps(ctx context.Context) ([]GetLoopInSwapsRow, error)
 	GetLoopOutSwap(ctx context.Context, swapHash []byte) (GetLoopOutSwapRow, error)
 	GetLoopOutSwaps(ctx context.Context) ([]GetLoopOutSwapsRow, error)
 	GetSwapUpdates(ctx context.Context, swapHash []byte) ([]SwapUpdate, error)
+	GetUnconfirmedBatches(ctx context.Context) ([]SweepBatch, error)
 	InsertHtlcKeys(ctx context.Context, arg InsertHtlcKeysParams) error
 	InsertLoopIn(ctx context.Context, arg InsertLoopInParams) error
 	InsertLoopOut(ctx context.Context, arg InsertLoopOutParams) error
 	InsertSwap(ctx context.Context, arg InsertSwapParams) error
 	InsertSwapUpdate(ctx context.Context, arg InsertSwapUpdateParams) error
+	UpsertBatch(ctx context.Context, arg UpsertBatchParams) error
 	UpsertLiquidityParams(ctx context.Context, params []byte) error
+	UpsertSweep(ctx context.Context, arg UpsertSweepParams) error
 }
 
 var _ Querier = (*Queries)(nil)

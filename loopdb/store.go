@@ -750,6 +750,34 @@ func (s *boltSwapStore) FetchLiquidityParams(ctx context.Context) ([]byte,
 	return params, err
 }
 
+func (s *boltSwapStore) FetchUnconfirmedSweepBatches(ctx context.Context) (
+	[]*Batch, error) {
+
+	return nil, nil
+}
+
+func (s *boltSwapStore) UpsertSweepBatch(ctx context.Context,
+	batch *Batch) error {
+
+	return nil
+}
+
+func (s *boltSwapStore) ConfirmBatch(ctx context.Context, id []byte) error {
+	return nil
+}
+
+func (s *boltSwapStore) UpsertSweep(ctx context.Context,
+	sweep *Sweep) error {
+
+	return nil
+}
+
+func (s *boltSwapStore) FetchBatchSweeps(ctx context.Context, id []byte) (
+	[]*Sweep, error) {
+
+	return nil, nil
+}
+
 // fetchUpdates deserializes the list of swap updates that are stored as a
 // key of the given bucket.
 func fetchUpdates(swapBucket *bbolt.Bucket) ([]*LoopEvent, error) {

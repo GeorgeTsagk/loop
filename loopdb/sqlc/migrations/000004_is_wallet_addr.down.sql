@@ -1,0 +1,1 @@
+ALTER TABLE loopout_swaps DROP COLUMN is_wallet_addr;
